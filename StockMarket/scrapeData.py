@@ -1,7 +1,3 @@
-import requests
-import time
-import re
-
 '''
 The homie Brad Lucas HOOKED IT UP
 I love this dude for writing this post up.
@@ -13,13 +9,13 @@ Main entry point to script is download_quotes
 '''
 
 import re
-import sys
 import time
-import datetime
 import requests
 
 
 def split_crumb_store(v):
+    if v is None:
+        return
     return v.split(':')[2].strip('"')
 
 
@@ -33,6 +29,8 @@ def find_crumb_store(lines):
 
 
 def get_cookie_value(r):
+    if not r.cookies:
+        return
     return {'B': r.cookies['B']}
 
 
@@ -55,10 +53,11 @@ def get_cookie_crumb(symbol):
 
 
 def get_data(symbol, start_date, end_date, cookie, crumb):
-    filename = '%s.csv' % (symbol)
+    filename = 'C:/Users/carme/Desktop/C_D/Projects/Python/Stock/TheProverbialCode/StockMarket' \
+               '/CSVFiles/' +'%s.csv' % (symbol)
     url = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%s&period2=%s&interval=1d&events=history&crumb=%s" % (symbol, start_date, end_date, crumb)
     response = requests.get(url, cookies=cookie)
-    with open (filename, 'wb') as handle:
+    with open(filename, 'wb') as handle:
         for block in response.iter_content(1024):
             handle.write(block)
 
@@ -68,27 +67,36 @@ def get_now_epoch():
     return int(time.time())
 
 
-def download_quotes(symbol):
-    start_date = 0
-    end_date = get_now_epoch()
-    cookie, crumb = get_cookie_crumb(symbol)
-    get_data(symbol, start_date, end_date, cookie, crumb)
+def download_quotes(symbols):
 
-
-if __name__ == '__main__':
-    # If we have at least one parameter go ahead and loop overa all the parameters assuming they are symbols
-    if len(sys.argv) == 1:
-       print("\nUsage: get-yahoo-quotes.py SYMBOL\n\n")
-    else:
-        for i in range(1, len(sys.argv)):
-            symbol = sys.argv[i]
+    if len(symbols) > 1:
+        for i in range(1, len(symbols)):
+            symbol = symbols[i]
             print("--------------------------------------------------")
             print("Downloading %s to %s.csv" % (symbol, symbol))
-            download_quotes(symbol)
+            # download_quotes(symbol)
             print("--------------------------------------------------")
+            start_date = 0
+            end_date = get_now_epoch()
+            cookie, crumb = get_cookie_crumb(symbol)
+            get_data(symbol, start_date, end_date, cookie, crumb)
+    else:
+        symbol = symbols
+        print("--------------------------------------------------")
+        print("Downloading %s to %s.csv" % (symbol, symbol))
+        # download_quotes(symbol)
+        print("--------------------------------------------------")
+        start_date = 0
+        end_date = get_now_epoch()
+        cookie, crumb = get_cookie_crumb(symbol)
+        get_data(symbol, start_date, end_date, cookie, crumb)
 
 
-download_quotes('VKTX')
+tickers = open('SP500.txt', 'r')
+tickers = tickers.read()
+tickers = tickers.split('\n')
+# tickers = ['APD']
+download_quotes(tickers)
 
 
 

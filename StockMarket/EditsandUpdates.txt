@@ -1,0 +1,10 @@
+Edits and Updates:
+
+Code changes, and comments. Rather than typing shit in for commits,
+use this file to add notes about what changed to files, the push 
+with the rest of the stuff. Include date. Newest changes at top.
+
+10/4/2018: scrapeData takes in list of S$P 500 stocks, saves to folder
+which is defined in get_data. I set the path to be some other folder
+outside of where I keep everything else to avoid clutter. Minor changes 
+to methods to allow for null cookie values.
