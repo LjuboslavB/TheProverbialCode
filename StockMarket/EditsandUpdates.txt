@@ -4,6 +4,18 @@ Code changes, and comments. Rather than typing shit in for commits,
 use this file to add notes about what changed to files, the push 
 with the rest of the stuff. Include date. Newest changes at top.
 
+
+10/15/2018:
+-- created a class StockClass to use for making all these instances of
+stocks and stuff. not an expert in what this is doing exaclty but basically
+trying to make things similar to how i had them in matlab. this will work 
+for now. 
+--parse_csv is used to get all the data from the csv files to the stock
+variable which is a big ass list of stock classes. 
+-- this is dope process. now we (i?) can actually start doing some data
+processing and get this bish rolling!
+
+
 10/4/2018: 
 --scrapeData takes in list of S$P 500 stocks, saves to folder
 which is defined in get_data. I set the path to be some other folder
