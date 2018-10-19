@@ -1,8 +1,18 @@
 Edits and Updates:
 
+
 Code changes, and comments. Rather than typing shit in for commits,
 use this file to add notes about what changed to files, the push 
 with the rest of the stuff. Include date. Newest changes at top.
+
+
+10/19/2018:
+--Added sector to each stock in SP500_Labels.txt. 
+--Added additional class atribute called sector to identify each
+ stocks sector. Changed stock.name to stock.ticker. 
+--Upated methods to use symbol[i][0] b/c of sector additon.
+--Would be nice to figure out how to get all the "tickers =" into 1 or 2 
+lines instead of the 5 it currently uses. 
 
 
 10/15/2018:
