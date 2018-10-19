@@ -48,7 +48,7 @@ def get_cookie_crumb(symbol):
 
 
 def get_data(symbol, start_date, end_date, cookie, crumb):
-    filename = 'C:/Users/carme/Desktop/C_D/Projects/Python/Stock/TheProverbialCode/StockMarket' \
+    filename = 'C:/Users/carme/Desktop/TheProverbialCode/StockMarket' \
                '/CSVFiles/' +'%s.csv' % (symbol)
     url = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%s&period2=%s&interval=1d&events=history&crumb=%s" % (symbol, start_date, end_date, crumb)
     response = requests.get(url, cookies=cookie)
@@ -64,7 +64,7 @@ def get_now_epoch():
 def download_quotes(symbols):
     if len(symbols) > 1:
         for i in range(1, len(symbols)):
-            symbol = symbols[i]
+            symbol = symbols[i][0]
             print("--------------------------------------------------")
             print("Downloading %s to %s.csv" % (symbol, symbol))
             print("--------------------------------------------------")
@@ -73,7 +73,7 @@ def download_quotes(symbols):
             cookie, crumb = get_cookie_crumb(symbol)
             get_data(symbol, start_date, end_date, cookie, crumb)
     else:
-        symbol = symbols[0]
+        symbol = symbols[0][0]
         print("--------------------------------------------------")
         print("Downloading %s to %s.csv" % (symbol, symbol))
         print("--------------------------------------------------")
@@ -84,15 +84,17 @@ def download_quotes(symbols):
 
 
 class StockClass:
-    def __init__(self, symbol, filename):
+    def __init__(self, symbol, sector, filename):
         try:
             self.data = pd.read_csv(filename)
-            self.name = [symbol]
+            self.ticker = [symbol]
+            self.sector = [sector]
             print('adding data for stock %s' % symbol)
         except Exception:
             self.data = []
-            self.name = 'No File'
-            print('file: %s.csv' % symbols[i], 'does not exist')
+            self.ticker = 'No File'
+            self.sector = 'No File'
+            print('file: %s.csv' % symbols[i][0], 'does not exist')
 
 
 def parse_csv(symbols):
@@ -100,21 +102,24 @@ def parse_csv(symbols):
     print(len(symbols))
     for i in range(len(symbols)):
         try:
-            filename = 'C:/Users/carme/Desktop/C_D/Projects/Python/Stock/TheProverbialCode/StockMarket' \
-                       '/CSVFiles/' + '%s.csv' % (symbols[i])
-            stock.append(StockClass(symbols[i], filename))
+            filename = 'C:/Users/carme/Desktop/TheProverbialCode/StockMarket' \
+                       '/CSVFiles/' + '%s.csv' % (symbols[i][0])
+            stock.append(StockClass(symbols[i][0], symbols[i][1], filename))
         except Exception:
-            print('file: %s.csv' % symbols[i], 'does not exist')
+            print('file: %s.csv' % symbols[i][0], symbols[i][1], 'does not exist')
     return stock
 
 
-tickers = open('SP500.txt', 'r')
+tickers = open('SP500_Labels.txt', 'r')
 tickers = tickers.read()
 tickers = tickers.split('\n')
+for i in range(len(tickers)):
+    tickers[i] = tickers[i].split('\t')
+
 # download_quotes(tickers)
 # tickers = ['ZION']
 stocks = parse_csv(tickers)
-print(stocks[10].name)
+print(stocks[10].ticker)
 
 
 
