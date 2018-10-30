@@ -11,7 +11,9 @@ Main entry point to script is download_quotes
 import re
 import time
 import requests
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def split_crumb_store(v):
@@ -61,13 +63,22 @@ def get_now_epoch():
     return int(time.time())
 
 
+def waitbar(all_iters, current_iter):
+    percent_complete = 100*(current_iter/all_iters)
+    here_sym = '>'
+    complete_sym = '-'
+    print(int(np.round((percent_complete/2)-1))*complete_sym + here_sym)
+
+
 def download_quotes(symbols):
-    if len(symbols) > 1:
-        for i in range(1, len(symbols)):
+    num_symbols = len(symbols)
+    if num_symbols > 1:
+        for i in range(1, num_symbols):
             symbol = symbols[i][0]
             print("--------------------------------------------------")
             print("Downloading %s to %s.csv" % (symbol, symbol))
-            print("--------------------------------------------------")
+            waitbar(num_symbols, i)
+            # print("--------------------------------------------------")
             start_date = 0
             end_date = get_now_epoch()
             cookie, crumb = get_cookie_crumb(symbol)
@@ -87,14 +98,20 @@ class StockClass:
     def __init__(self, symbol, sector, filename):
         try:
             self.data = pd.read_csv(filename)
+            self.data_mean = self.data.iloc[:, 1:5].mean(1)
             self.ticker = [symbol]
             self.sector = [sector]
-            print('adding data for stock %s' % symbol)
+            self.filter_out_nan()
+            print('Adding Data For Stock %s' % symbol)
         except Exception:
             self.data = []
-            self.ticker = 'No File'
-            self.sector = 'No File'
-            print('file: %s.csv' % symbols[i][0], 'does not exist')
+            self.ticker = ['No File']
+            print('file: %s.csv' % symbol, 'does not exist')
+    def filter_out_nan(self):
+        if self.ticker[:][0] != 'No File':
+            self.data.iloc[:, 1:] = self.data.iloc[:, 1:].apply(pd.to_numeric, errors='coerce')
+            self.data = self.data.iloc[:, :].fillna(method='ffill')
+            return self
 
 
 def parse_csv(symbols):
@@ -110,108 +127,35 @@ def parse_csv(symbols):
     return stock
 
 
-tickers = open('SP500_Labels.txt', 'r')
-tickers = tickers.read()
-tickers = tickers.split('\n')
-for i in range(len(tickers)):
-    tickers[i] = tickers[i].split('\t')
+def gather_tickers(ticker_list):
+    tickers = open(ticker_list, 'r')
+    tickers = tickers.read()
+    tickers = tickers.split('\n')
+    for i in range(len(tickers)):
+        tickers[i] = tickers[i].split('\t')
+    return tickers
+
+
+def make_labels_percent_gain(stocks):
+    for i in range(len(stocks)):
+        if stocks[i].ticker[0][:] != 'No File':
+            stocks[i].label_pg = np.zeros((len(stocks[i].data), 1))
+            buy_label = 100*(stocks[i].data.iloc[:, 4]-stocks[i].data.iloc[:, 1])/stocks[i].data.iloc[:, 1]
+            buy_label_idx = np.nonzero(buy_label >= 5)
+            stocks[i].label_pg[buy_label_idx[0][:], :] = 1
+    return stocks
+
+ticker_list = 'SP500_Labels.txt'
+tickers = gather_tickers(ticker_list)
 
 # download_quotes(tickers)
-# tickers = ['ZION']
 stocks = parse_csv(tickers)
-print(stocks[10].ticker)
+stocks = make_labels_percent_gain(stocks)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# from command line, enter this stuff to get cookie, crumb
-# link to instructions : http://blog.bradlucas.com/posts/2017-06-02-new-yahoo-finance-quote-download-url/
-# step 1: curl https://finance.yahoo.com/quote/GOOG?p=GOOG > goog.html
-# step 2: open the .html file to view raw code
-# step 3: get cookie
-#         curl -s --cookie-jar cookie.txt https://finance.yahoo.com/quote/GOOG?p=GOOG > goog.html
-#           alternatively, echo it out
-#         echo -en "$(curl -s --cookie-jar $cookieJar https://finance.yahoo.com/quote/GOOG/?p=GOOG)"
-# CrumbStore":{"crumb":"DDuBQ4pnLZc"}
-# Cookie B Value: 0f82loddq6241&b=3&s=jq
-
-
-# crumble_link = 'https://finance.yahoo.com/quote/{0}/history?p={0}'
-# crumble_regex = r'CrumbStore":{"crumb":"(.*?)"}'
-# cookie_regex = r'Set-Cookie: (.*?); '
-# quote_link = 'https://query1.finance.yahoo.com/v7/finance/download/{}?period1={}&period2={}&interval=1d&events=history&crumb={}'
-
-#
-# class StockClass:
-#     def __init__(self, symbol, filename):
-#         try:
-#             self.data = pd.read_csv(filename)
-#             self.name = [symbol]
-#             print('adding data')
-#         except Exception:
-#             self.data=[]
-#             self.name='No File'
-#             print('file: %s.csv' % symbols[i], 'does not exist')
-#
-#
-# def parse_csv(symbols):
-#     for i in range(len(symbols)):
-#         try:
-#             filename = 'C:/Users/carme/Desktop/C_D/Projects/Python/Stock/TheProverbialCode/StockMarket' \
-#                        '/CSVFiles/' + '%s.csv' % (symbols[i])
-#         except Exception:
-#             filename='Nothing'
-#             print('file: %s.csv' % symbols[i], 'does not exist')
-#         stock = StockClass(symbols[i], filename)
-#     return stock
-
-# class StockClass:
-#
-#     def __init__(self, symbols):
-#         self.max = len(symbols)
-#
-#     def __iter__(self):
-#         self.n = 0
-#         return self
-#
-#     def __next__(self, symbols):
-#         if self.n <= self.max:
-#             try:
-#                 filename = 'C:/Users/carme/Desktop/C_D/Projects/Python/Stock/TheProverbialCode' \
-#                            '/StockMarket' \
-#                            '/CSVFiles/' + '%s.csv' % (symbols[self.n])
-#                 self.data[self.n] = pd.read_csv(filename)
-#                 self.name[self.n] = [symbols[self.n]]
-#                 print('adding data')
-#             except Exception:
-#                 self.data[self.n] = []
-#                 self.name[self.n] = 'No File'
-#                 print('file: %s.csv' % symbols[self.n], 'does not exist')
-#             self.n += 1
-#         else:
-#             raise StopIteration
-#         return self
-#
-#
-# def parse_csv(symbols):
-#     stock_data = StockClass(symbols)
-#     return stock_data
+to_show = np.random.random_integers(0,len(tickers),1)
+ax1= plt.subplot(2,1,1)
+line1 = plt.plot(stocks[to_show[0]].data_mean)
+plt.title(stocks[to_show[0]].ticker[0][:])
+ax2 =plt.subplot(2,1,2, sharex=ax1)
+line2 = plt.plot(stocks[to_show[0]].label_pg)
+plt.show()

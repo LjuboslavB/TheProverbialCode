@@ -1,9 +1,34 @@
-Edits and Updates:
+Edits And Updates:
 
 
 Code changes, and comments. Rather than typing shit in for commits,
 use this file to add notes about what changed to files, the push 
 with the rest of the stuff. Include date. Newest changes at top.
+
+
+10/30/2018:
+--Added make_labels_percent_gain function to assign a label to every day
+where the stock increased above a threshold percentage. will use this to 
+create ANN for classification. 
+--Added method to StockClass to filter out nans. not sure how else to 
+deal with this issue (also was a major bitch to get this working).
+--Deleted a few delisted stocks from the data set to avoid errors
+--Put the ticker import into a function called gather_tickers
+--Added dope waitbar function
+--Just about ready to make a first crack an ANN for use with a trading algo.
+My idea is as follows: train ANN to spit out 1 for buy, 0 for sell on a day
+befor stock is predicted to increase by some threshold percentage. compute 
+this at the end of each day to determine whether to hold or sell stock the
+following morning or in AH. an extention of this is to use regression or a 
+finer classification to get a specific percentage change for following day, 
+and perform larger iterative prediction (almost like recursion) to map out a 
+trade plan. so: prediction1--> ANN--> prediction2--> ANN--> prediction3-->,
+can use this n times and compare against realitiy for loss function in that 
+sense. 
+--Other ideas include computing indicator and performing k-means clustering,
+would probably require normalizaiton of data. 
+--Eventually would like to integrate DMD to correlate modes with buy signals.
+
 
 
 10/19/2018:

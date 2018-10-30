@@ -64,7 +64,6 @@ BBT	Financials
 BBY	Consumer Discretionary
 BDX	Health Care
 BEN	Financials
-BF.B	Consumer Staples
 BHF	Financials
 BHGE	Energy
 BIIB	Health Care
@@ -73,7 +72,6 @@ BKNG	Consumer Discretionary
 BLK	Financials
 BLL	Materials
 BMY	Health Care
-BRK.B	Financials
 BSX	Health Care
 BWA	Consumer Discretionary
 BXP	Real Estate
@@ -118,7 +116,6 @@ COTY	Consumer Staples
 CPB	Consumer Staples
 CRM	Information Technology
 CSCO	Information Technology
-CSRA	Information Technology
 CSX	Industrials
 CTAS	Industrials
 CTL	Telecommunication Services
@@ -142,7 +139,6 @@ DISH	Consumer Discretionary
 DLR	Real Estate
 DLTR	Consumer Discretionary
 DOV	Industrials
-DPS	Consumer Staples
 DRE	Real Estate
 DRI	Consumer Discretionary
 DTE	Utilities
@@ -314,7 +310,6 @@ MMC	Financials
 MMM	Industrials
 MNST	Consumer Staples
 MO	Consumer Staples
-MON	Materials
 MOS	Materials
 MPC	Energy
 MRK	Health Care
