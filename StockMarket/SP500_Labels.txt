@@ -1,7 +1,5 @@
-A	Health Care
 AAL	Industrials
 AAP	Consumer Discretionary
-AAPL	Information Technology
 ABBV	Health Care
 ABC	Health Care
 ABT	Health Care
@@ -59,12 +57,10 @@ AYI	Industrials
 AZO	Consumer Discretionary
 BA	Industrials
 BAC	Financials
-BAX	Health Care
 BBT	Financials
 BBY	Consumer Discretionary
 BDX	Health Care
 BEN	Financials
-BHF	Financials
 BHGE	Energy
 BIIB	Health Care
 BK	Financials
@@ -76,7 +72,6 @@ BSX	Health Care
 BWA	Consumer Discretionary
 BXP	Real Estate
 C	Financials
-CA	Information Technology
 CAG	Consumer Staples
 CAH	Health Care
 CAT	Industrials
@@ -146,7 +141,6 @@ DUK	Utilities
 DVA	Health Care
 DVN	Energy
 DWDP	Materials
-DXC	Information Technology
 EA	Information Technology
 EBAY	Information Technology
 ECL	Materials
@@ -195,7 +189,6 @@ FTI	Energy
 FTV	Industrials
 GD	Industrials
 GE	Industrials
-GGP	Real Estate
 GILD	Health Care
 GIS	Consumer Staples
 GLW	Information Technology
@@ -285,7 +278,6 @@ LNC	Financials
 LNT	Utilities
 LOW	Consumer Discretionary
 LRCX	Information Technology
-LUK	Financials
 LUV	Industrials
 LYB	Materials
 M	Consumer Discretionary
@@ -377,7 +369,6 @@ PSA	Real Estate
 PSX	Energy
 PVH	Consumer Discretionary
 PWR	Industrials
-PX	Materials
 PXD	Energy
 PYPL	Information Technology
 QCOM	Information Technology
@@ -404,7 +395,6 @@ SCG	Utilities
 SCHW	Financials
 SEE	Materials
 SHW	Materials
-SIVB	Financials
 SJM	Consumer Staples
 SLB	Energy
 SLG	Real Estate
@@ -442,10 +432,8 @@ TSCO	Consumer Discretionary
 TSN	Consumer Staples
 TSS	Information Technology
 TTWO	Information Technology
-TWX	Consumer Discretionary
 TXN	Information Technology
 TXT	Industrials
-UA	Consumer Discretionary
 UAA	Consumer Discretionary
 UAL	Industrials
 UDR	Real Estate
@@ -484,7 +472,6 @@ WMT	Consumer Staples
 WRK	Materials
 WU	Information Technology
 WY	Real Estate
-WYN	Consumer Discretionary
 WYNN	Consumer Discretionary
 XEC	Energy
 XEL	Utilities

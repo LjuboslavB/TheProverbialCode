@@ -1,19 +1,31 @@
-'''
-The homie Brad Lucas HOOKED IT UP
-I love this dude for writing this post up.
-Helpful, informative, saved lots of time.
-http://blog.bradlucas.com/posts/2017-06-03-yahoo-finance-quote-download-python/
-https://github.com/bradlucas/get-yahoo-quotes-python
-
-Main entry point to script is download_quotes
-'''
-
 import re
 import time
+import random
 import requests
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.finance import candlestick2_ohlc
+
+import keras
+import tensorflow as tf
+from keras.utils import to_categorical
+from keras.layers import Input, Dense, Dropout
+from keras.models import Model, Sequential
+
+s = 21
+random.seed(6+s)
+tf.set_random_seed(333+s*2)
+np.random.seed(856+s*3)
+
+
+# def pandas_candlestick_ohlc(dat):
+#
+#     fig, ax = plt.subplots()
+#     candlestick2_ohlc(ax, dat['Open'], dat['High'],dat['Low'],dat['Close'], colorup="green", colordown="red", width=.4)
+#     ax.autoscale_view()
+#     plt.setp(plt.gca().get_xticklabels(), rotation=45, horizontalalignment='right')
+#     plt.show()
 
 
 def split_crumb_store(v):
@@ -99,6 +111,24 @@ class StockClass:
         try:
             self.data = pd.read_csv(filename)
             self.data_mean = self.data.iloc[:, 1:5].mean(1)
+            self.percent_change = 100*(self.data.iloc[:, 4]-self.data.iloc[:, 1])/self.data.iloc[:, 1]
+            self.percent_change[0] = 0
+            self.d1price = self.data_mean.shift(2)-4*self.data_mean.shift(1)+3*self.data_mean
+            self.d2price = self.data_mean.shift(2)-2*self.data_mean.shift(1)+self.data_mean
+            self.d3price = -self.data_mean.shift(3)+3*self.data_mean.shift(2)+-3*self.data_mean.shift(1)+self.data_mean
+            self.d1volume = self.data.iloc[:, -1].shift(2)-4*self.data.iloc[:, -1].shift(1)+3*self.data.iloc[:, -1]
+            self.d2volume = self.data.iloc[:, -1].shift(2)-2*self.data.iloc[:, -1].shift(1)+self.data.iloc[:, -1]
+            self.d3volume = -self.data.iloc[:,-1].shift(3)+3*self.data.iloc[:,-1].shift(2)-3*self.data.iloc[:,-1].shift(1)+self.data.iloc[:,-1]
+            self.d1price[0:3] = self.d1price[3]
+            self.d2price[0:3] = self.d2price[3]
+            self.d3price[0:3] = self.d3price[3]
+            self.d1volume[0:3] = self.d1volume[3]
+            self.d2volume[0:3] = self.d2volume[3]
+            self.d3volume[0:3] = self.d3volume[3]
+            self.ma5 = self.data_mean.rolling(5, min_periods=1).mean()
+            self.ma10 = self.data_mean.rolling(10, min_periods=1).mean()
+            self.ma15 = self.data_mean.rolling(15, min_periods=1).mean()
+            self.ma20 = self.data_mean.rolling(20, min_periods=1).mean()
             self.ticker = [symbol]
             self.sector = [sector]
             self.filter_out_nan()
@@ -140,22 +170,138 @@ def make_labels_percent_gain(stocks):
     for i in range(len(stocks)):
         if stocks[i].ticker[0][:] != 'No File':
             stocks[i].label_pg = np.zeros((len(stocks[i].data), 1))
-            buy_label = 100*(stocks[i].data.iloc[:, 4]-stocks[i].data.iloc[:, 1])/stocks[i].data.iloc[:, 1]
-            buy_label_idx = np.nonzero(buy_label >= 5)
-            stocks[i].label_pg[buy_label_idx[0][:], :] = 1
+            buy_label_idx = np.nonzero(stocks[i].percent_change >= 1)
+            stocks[i].label_pg[buy_label_idx[0][:]-1, :] = 1
     return stocks
 
+
+def normalize_data(data):
+    try:
+        for i in range(data.shape[1]):
+            data[:, i] = data[:, i] / np.max(data[:, i])
+    except IndexError:
+        data[:] = data[:] / np.max(data[:])
+    return data
+
+
 ticker_list = 'SP500_Labels.txt'
+# ticker_list = 'Penny.txt'
 tickers = gather_tickers(ticker_list)
 
 # download_quotes(tickers)
 stocks = parse_csv(tickers)
 stocks = make_labels_percent_gain(stocks)
-
-to_show = np.random.random_integers(0,len(tickers),1)
-ax1= plt.subplot(2,1,1)
-line1 = plt.plot(stocks[to_show[0]].data_mean)
+plt.figure()
+to_show = np.random.random_integers(0, len(tickers)-1, 1)
+ax1 = plt.subplot(2, 1, 1)
+candlestick2_ohlc(ax1, stocks[to_show[0]].data['Open'], stocks[to_show[0]].data['High'], stocks[to_show[0]].data['Low'], stocks[to_show[0]].data[
+    'Close'], colorup="green", colordown="red", width=.4)
+# line1 = plt.plot(stocks[to_show[0]].data_mean)
 plt.title(stocks[to_show[0]].ticker[0][:])
-ax2 =plt.subplot(2,1,2, sharex=ax1)
-line2 = plt.plot(stocks[to_show[0]].label_pg)
+ax2 = plt.subplot(2, 1, 2, sharex=ax1)
+line2 = plt.plot(stocks[to_show[0]].label_pg, 'k')
+plt.show(block=False)
+plt.pause(1)
+
+
+# ANN Code: Regression Model. Predict %Change for next day.
+# first testing for just one symbol
+split_percent = 0.75
+split_idx = round(split_percent*len(stocks[to_show[0]].data))
+###
+train_percent_change = stocks[to_show[0]].percent_change.iloc[:split_idx]
+train_price = stocks[to_show[0]].data_mean[:split_idx]
+train_volume = stocks[to_show[0]].data.iloc[:split_idx, -1]
+train_ma5 = stocks[to_show[0]].ma5.iloc[:split_idx]
+train_ma10 = stocks[to_show[0]].ma10.iloc[:split_idx]
+train_ma15 = stocks[to_show[0]].ma15.iloc[:split_idx]
+train_ma20 = stocks[to_show[0]].ma20.iloc[:split_idx]
+train_d1price = stocks[to_show[0]].d1price.iloc[:split_idx]
+train_d2price = stocks[to_show[0]].d2price.iloc[:split_idx]
+train_d3price = stocks[to_show[0]].d3price.iloc[:split_idx]
+train_d1volume = stocks[to_show[0]].d1volume.iloc[:split_idx]
+train_d2volume = stocks[to_show[0]].d2volume.iloc[:split_idx]
+train_d3volume = stocks[to_show[0]].d3volume.iloc[:split_idx]
+train_data = np.column_stack((train_percent_change, train_d1price, train_d2price, train_d3price, train_d1volume, train_d2volume, train_d3volume,
+                              train_volume))
+
+
+test_percent_change = stocks[to_show[0]].percent_change.iloc[split_idx:]
+test_price = stocks[to_show[0]].data_mean[split_idx:]
+test_volume = stocks[to_show[0]].data.iloc[split_idx:, -1]
+test_ma5 = stocks[to_show[0]].ma5.iloc[split_idx:]
+test_ma10 = stocks[to_show[0]].ma10.iloc[split_idx:]
+test_ma15 = stocks[to_show[0]].ma15.iloc[split_idx:]
+test_ma20 = stocks[to_show[0]].ma20.iloc[split_idx:]
+test_d1price = stocks[to_show[0]].d1price.iloc[split_idx:]
+test_d2price = stocks[to_show[0]].d2price.iloc[split_idx:]
+test_d3price = stocks[to_show[0]].d3price.iloc[split_idx:]
+test_d1volume = stocks[to_show[0]].d1volume.iloc[split_idx:]
+test_d2volume = stocks[to_show[0]].d2volume.iloc[split_idx:]
+test_d3volume = stocks[to_show[0]].d3volume.iloc[split_idx:]
+test_data = np.column_stack((test_percent_change, test_d1price, test_d2price, test_d3price, test_d1volume, test_d2volume, test_d3volume, test_volume))
+###
+train_labels = train_price.shift(-1)
+train_labels.iloc[-1] = train_labels.iloc[-2]
+test_labels = test_price.shift(-1)
+test_labels.iloc[-1] = test_labels.iloc[-2]
+###
+norm_to = 1
+train_data[:, norm_to:] = normalize_data(train_data[:, norm_to:])
+test_data[:, norm_to:] = normalize_data(test_data[:, norm_to:])
+
+
+# train_labels = normalize_data(train_labels)
+# test_labels = normalize_data(test_labels)
+train_labels = stocks[to_show[0]].label_pg[:split_idx]
+test_labels = stocks[to_show[0]].label_pg[split_idx:]
+train_labels_a = train_labels
+test_labels_a = test_labels
+train_labels = to_categorical(train_labels)
+test_labels = to_categorical(test_labels)
+###
+###
+print('Creating Model')
+n_inputs = train_data.shape[1]
+n_outputs = 2
+model = Sequential()
+model.add(Dense(n_inputs*20, input_dim=n_inputs, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(n_inputs*16, activation='relu'))
+model.add(Dropout(0.35))
+model.add(Dense(n_inputs*12, activation='relu'))
+model.add(Dropout(0.25))
+model.add(Dense(n_inputs*8, activation='relu'))
+model.add(Dropout(0.15))
+model.add(Dense(n_inputs*4, activation='relu'))
+model.add(Dropout(0.05))
+model.add(Dense(n_inputs*1, activation='relu'))
+model.add(Dense(n_outputs))
+omt = keras.optimizers.Adam(lr=0.000001)
+loss = 'binary_crossentropy'
+print('Compiling Model')
+model.compile(loss=loss,
+              optimizer=omt,
+              metrics=['binary_accuracy'])
+print('Fitting Model')
+model.fit(train_data, train_labels,
+          epochs=100,
+          batch_size=int(np.round((len(test_labels) / 5))),
+          verbose=True,
+          shuffle=False,
+          validation_data=(test_data, test_labels))
+print('Scoring Model')
+scoresTest = model.evaluate(test_data, test_labels, verbose=0)
+prd = model.predict_classes(test_data)
+print(np.column_stack((prd, test_labels)))
+print(str(model.metrics_names[1])+' %.2f%%' % (scoresTest[1]*100) + ' accuracy on test data')
+plt.figure()
+ax1 = plt.subplot(3, 1, 1)
+test_ohlc = stocks[to_show[0]].data.iloc[split_idx:, :]
+candlestick2_ohlc(ax1, test_ohlc['Open'], test_ohlc['High'], test_ohlc['Low'], test_ohlc['Close'], colorup="green", colordown="red", width=.4)
+plt.title(stocks[to_show[0]].ticker[0][:])
+ax2 = plt.subplot(3, 1, 2, sharex=ax1)
+line2 = plt.plot(np.arange(len(test_labels)), test_labels[:, 1], 'k')
+ax2 = plt.subplot(3, 1, 3, sharex=ax1)
+line3 = plt.plot(np.arange(len(prd)), prd, 'k')
 plt.show()

@@ -6,6 +6,16 @@ use this file to add notes about what changed to files, the push
 with the rest of the stuff. Include date. Newest changes at top.
 
 
+11/08/2018: 
+--AYO making progress here. ANN w/shitty indicators didnt work AT ALL,
+however I grew a pair and went IN on the d1, d2, d3's (lmao) and getting 
+some interesting results here.
+--Changes basically adding indicators, sticking with BINARY classification
+for now - regression models did NOT work - something fundamental going on 
+there I think. 
+--Stoke is high.
+
+
 10/30/2018:
 --Added make_labels_percent_gain function to assign a label to every day
 where the stock increased above a threshold percentage. will use this to 
