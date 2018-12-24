@@ -13,19 +13,10 @@ from keras.utils import to_categorical
 from keras.layers import Input, Dense, Dropout
 from keras.models import Model, Sequential
 
-s = 21
-random.seed(6+s)
-tf.set_random_seed(333+s*2)
-np.random.seed(856+s*3)
-
-
-# def pandas_candlestick_ohlc(dat):
-#
-#     fig, ax = plt.subplots()
-#     candlestick2_ohlc(ax, dat['Open'], dat['High'],dat['Low'],dat['Close'], colorup="green", colordown="red", width=.4)
-#     ax.autoscale_view()
-#     plt.setp(plt.gca().get_xticklabels(), rotation=45, horizontalalignment='right')
-#     plt.show()
+# s = 21
+# random.seed(6+s)
+# tf.set_random_seed(333+s*2)
+# np.random.seed(856+s*3)
 
 
 def split_crumb_store(v):
@@ -186,25 +177,16 @@ def normalize_data(data):
 
 ticker_list = 'SP500_Labels.txt'
 # ticker_list = 'Penny.txt'
+# ticker_list = 'Single.txt'
 tickers = gather_tickers(ticker_list)
 
 # download_quotes(tickers)
 stocks = parse_csv(tickers)
 stocks = make_labels_percent_gain(stocks)
-plt.figure()
 to_show = np.random.random_integers(0, len(tickers)-1, 1)
-ax1 = plt.subplot(2, 1, 1)
-candlestick2_ohlc(ax1, stocks[to_show[0]].data['Open'], stocks[to_show[0]].data['High'], stocks[to_show[0]].data['Low'], stocks[to_show[0]].data[
-    'Close'], colorup="green", colordown="red", width=.4)
-# line1 = plt.plot(stocks[to_show[0]].data_mean)
-plt.title(stocks[to_show[0]].ticker[0][:])
-ax2 = plt.subplot(2, 1, 2, sharex=ax1)
-line2 = plt.plot(stocks[to_show[0]].label_pg, 'k')
-plt.show(block=False)
-plt.pause(1)
 
 
-# ANN Code: Regression Model. Predict %Change for next day.
+# ANN Code: Binary Buy Signal
 # first testing for just one symbol
 split_percent = 0.75
 split_idx = round(split_percent*len(stocks[to_show[0]].data))
@@ -241,18 +223,16 @@ test_d2volume = stocks[to_show[0]].d2volume.iloc[split_idx:]
 test_d3volume = stocks[to_show[0]].d3volume.iloc[split_idx:]
 test_data = np.column_stack((test_percent_change, test_d1price, test_d2price, test_d3price, test_d1volume, test_d2volume, test_d3volume, test_volume))
 ###
-train_labels = train_price.shift(-1)
-train_labels.iloc[-1] = train_labels.iloc[-2]
-test_labels = test_price.shift(-1)
-test_labels.iloc[-1] = test_labels.iloc[-2]
+# train_labels = train_price.shift(-1)
+# train_labels.iloc[-1] = train_labels.iloc[-2]
+# test_labels = test_price.shift(-1)
+# test_labels.iloc[-1] = test_labels.iloc[-2]
 ###
 norm_to = 1
 train_data[:, norm_to:] = normalize_data(train_data[:, norm_to:])
 test_data[:, norm_to:] = normalize_data(test_data[:, norm_to:])
 
 
-# train_labels = normalize_data(train_labels)
-# test_labels = normalize_data(test_labels)
 train_labels = stocks[to_show[0]].label_pg[:split_idx]
 test_labels = stocks[to_show[0]].label_pg[split_idx:]
 train_labels_a = train_labels
@@ -265,19 +245,11 @@ print('Creating Model')
 n_inputs = train_data.shape[1]
 n_outputs = 2
 model = Sequential()
-model.add(Dense(n_inputs*20, input_dim=n_inputs, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(n_inputs*16, activation='relu'))
-model.add(Dropout(0.35))
-model.add(Dense(n_inputs*12, activation='relu'))
-model.add(Dropout(0.25))
-model.add(Dense(n_inputs*8, activation='relu'))
+model.add(Dense(n_inputs*10, input_dim=n_inputs, activation='relu'))
 model.add(Dropout(0.15))
-model.add(Dense(n_inputs*4, activation='relu'))
-model.add(Dropout(0.05))
-model.add(Dense(n_inputs*1, activation='relu'))
+# model.add(Dense(n_inputs*2, activation='relu'))
 model.add(Dense(n_outputs))
-omt = keras.optimizers.Adam(lr=0.000001)
+omt = keras.optimizers.Adam(lr=0.0001)
 loss = 'binary_crossentropy'
 print('Compiling Model')
 model.compile(loss=loss,
@@ -295,13 +267,65 @@ scoresTest = model.evaluate(test_data, test_labels, verbose=0)
 prd = model.predict_classes(test_data)
 print(np.column_stack((prd, test_labels)))
 print(str(model.metrics_names[1])+' %.2f%%' % (scoresTest[1]*100) + ' accuracy on test data')
+
+###
+###
+buy_price = np.array([])
+sell_price = np.array([])
+buy_day = np.array([])
+sell_day = np.array([])
+i = -1
+f_day = len(stocks[to_show[0]].data_mean) - len(prd)
+ts = stocks[to_show[0]]
+pg = 1
+while i < len(prd)-2:
+    i += 1
+    # print(i)
+    if prd[i] == 1:
+        i += 1
+        buy_price = np.append(buy_price, ts.data.iloc[f_day + i, 1])
+        buy_day = np.append(buy_day, f_day + i)
+        pc = 100*(ts.data.iloc[f_day + i, 4] - buy_price[-1])/buy_price[-1]
+        if pc > pg:
+            sell_price = np.append(sell_price, ts.data.iloc[f_day + i, 4])
+            sell_day =np.append(sell_day, f_day + i)
+        elif pc < -pg:
+            sell_price = np.append(sell_price, ts.data.iloc[f_day +1, 4])
+            sell_day = np.append(sell_day, f_day + i)
+        while abs(pc) < pg and i < len(prd)-1:
+            i += 1
+            # print(i)
+            pc = 100 * (ts.data.iloc[f_day + i, 4] - buy_price[-1]) / buy_price[-1]
+            if pc > pg:
+                sell_price = np.append(sell_price, ts.data.iloc[f_day + i, 4])
+                sell_day = np.append(sell_day, f_day + i)
+            elif pc < -pg:
+                sell_price = np.append(sell_price, ts.data.iloc[f_day + i, 4])
+                sell_day = np.append(sell_day, f_day + i)
+                break
+
+
+if len(sell_price) != len(buy_price):
+    a = (sell_price[:] - buy_price[:-1])/buy_price[:-1]
+else:
+    a = (sell_price[:] - buy_price[:]) / buy_price[:]
+
+print('Average Percent Change :' + str(np.round((100*np.mean(a)), 2)))
+if len(a) != 0:
+    print('Win Percent :' + str(np.round(100*len(np.nonzero(a > 0)[0])/len(a), 2)))
+
+##
+###
 plt.figure()
 ax1 = plt.subplot(3, 1, 1)
 test_ohlc = stocks[to_show[0]].data.iloc[split_idx:, :]
 candlestick2_ohlc(ax1, test_ohlc['Open'], test_ohlc['High'], test_ohlc['Low'], test_ohlc['Close'], colorup="green", colordown="red", width=.4)
+plt.plot(buy_day-f_day, ts.data_mean.iloc[buy_day], 'g.', markersize=10)
+plt.plot(sell_day-f_day, ts.data.iloc[sell_day, 4], 'r.', markersize=10)
 plt.title(stocks[to_show[0]].ticker[0][:])
 ax2 = plt.subplot(3, 1, 2, sharex=ax1)
 line2 = plt.plot(np.arange(len(test_labels)), test_labels[:, 1], 'k')
-ax2 = plt.subplot(3, 1, 3, sharex=ax1)
+ax3 = plt.subplot(3, 1, 3, sharex=ax1)
 line3 = plt.plot(np.arange(len(prd)), prd, 'k')
 plt.show()
+

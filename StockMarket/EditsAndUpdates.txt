@@ -6,6 +6,17 @@ use this file to add notes about what changed to files, the push
 with the rest of the stuff. Include date. Newest changes at top.
 
 
+11/15/2018:
+--More progress here. Testing simplified version of NN, only two layers.
+Seems to train better.
+--Implemented simple trading strategy w/visulaization. Interesting to 
+play with here but need to make better trading strategy as well as 
+train up the net with more parameters.
+--Currently thinking binary moving average correlation matrix. HI_LOW 
+LOW_HI sort of deal. This is important for lots of traders. 
+--Happy with how things are progressing here doe.
+
+
 11/08/2018: 
 --AYO making progress here. ANN w/shitty indicators didnt work AT ALL,
 however I grew a pair and went IN on the d1, d2, d3's (lmao) and getting 
