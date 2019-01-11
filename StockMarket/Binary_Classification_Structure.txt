@@ -1,0 +1,62 @@
+########
+########
+# Binary Classification Code. Doesn't really work at all. Need to think if 
+# this is even a valid way to asses price action. Got shit results over all
+########
+########
+
+### ANN Code: Classify based on buy sell hold signal
+### first testing for just one symbol
+split_percent = 0.8
+split_idx = round(split_percent*len(stocks[to_show[0]].data))
+###
+train_price = stocks[to_show[0]].percent_change.iloc[:split_idx]
+train_volume = stocks[to_show[0]].data.iloc[:split_idx, -1]
+train_ma5 = stocks[to_show[0]].ma5.iloc[:split_idx]
+train_ma10 = stocks[to_show[0]].ma10.iloc[:split_idx]
+train_ma15 = stocks[to_show[0]].ma15.iloc[:split_idx]
+train_ma20 = stocks[to_show[0]].ma20.iloc[:split_idx]
+train_data = np.column_stack((train_price, train_ma5, train_ma10, train_ma15, train_ma20, train_volume))
+
+
+test_price = stocks[to_show[0]].percent_change.iloc[split_idx:]
+test_volume = stocks[to_show[0]].data.iloc[split_idx:, -1]
+test_ma5 = stocks[to_show[0]].ma5.iloc[split_idx:]
+test_ma10 = stocks[to_show[0]].ma10.iloc[split_idx:]
+test_ma15 = stocks[to_show[0]].ma15.iloc[split_idx:]
+test_ma20 = stocks[to_show[0]].ma20.iloc[split_idx:]
+
+test_data = np.column_stack((test_price, test_ma5, test_ma10, test_ma15, test_ma20, test_volume))
+
+
+train_labels = stocks[to_show[0]].label_pg[:split_idx]
+test_labels = stocks[to_show[0]].label_pg[split_idx:]
+train_labels_a = train_labels
+test_labels_a = test_labels
+train_labels = to_categorical(train_labels)
+test_labels = to_categorical(test_labels)
+###
+print('Creating Model')
+n_inputs = 6
+n_outputs = 2
+model = Sequential()
+model.add(Dense(n_inputs*16, input_dim=n_inputs, activation='relu'))
+model.add(Dense(n_inputs*8, activation='relu'))
+model.add(Dense(n_inputs*4, activation='relu'))
+model.add(Dense(n_inputs*3, activation='relu'))
+model.add(Dense(n_outputs, activation='softmax'))
+omt = keras.optimizers.Adam(lr=0.001)
+loss='categorical_crossentropy'
+model.compile(loss=loss,
+              optimizer=omt,
+              metrics=['accuracy'])
+
+model.fit(train_data, train_labels,
+          epochs=50,
+          verbose=True,
+          shuffle=False,
+          validation_data=(test_data, test_labels))
+scoresTest = model.evaluate(test_data, test_labels,verbose=0)
+print(str(model.metrics_names[1])+' %.2f%%' % (scoresTest[1]*100) + ' accuracy on test data')
+prd = model.predict_classes(test_data)
+print(np.column_stack((prd, test_labels_a)))

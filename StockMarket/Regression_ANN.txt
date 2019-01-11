@@ -1,0 +1,56 @@
+# ANN Code: Regression Model. Predict %Change for next day.
+# first testing for just one symbol
+
+split_percent = 0.8
+split_idx = round(split_percent*len(stocks[to_show[0]].data))
+###
+train_percent_change = stocks[to_show[0]].percent_change.iloc[:split_idx]
+train_price = stocks[to_show[0]].data_mean[:split_idx]
+train_volume = stocks[to_show[0]].data.iloc[:split_idx, -1]
+train_ma5 = stocks[to_show[0]].ma5.iloc[:split_idx]
+train_ma10 = stocks[to_show[0]].ma10.iloc[:split_idx]
+train_ma15 = stocks[to_show[0]].ma15.iloc[:split_idx]
+train_ma20 = stocks[to_show[0]].ma20.iloc[:split_idx]
+train_data = np.column_stack((train_price, train_ma5, train_ma10, train_ma15, train_ma20, train_volume))
+train_data[:, :-1] = normalize_data(train_data[:, :-1])
+
+test_percent_change = stocks[to_show[0]].percent_change.iloc[split_idx:]
+test_price = stocks[to_show[0]].data_mean[split_idx:]
+test_volume = stocks[to_show[0]].data.iloc[split_idx:, -1]
+test_ma5 = stocks[to_show[0]].ma5.iloc[split_idx:]
+test_ma10 = stocks[to_show[0]].ma10.iloc[split_idx:]
+test_ma15 = stocks[to_show[0]].ma15.iloc[split_idx:]
+test_ma20 = stocks[to_show[0]].ma20.iloc[split_idx:]
+test_data = np.column_stack((test_price, test_ma5, test_ma10, test_ma15, test_ma20, test_volume))
+test_data[:, :-1] = normalize_data(test_data[:, :-1])
+train_labels = train_percent_change.shift(-1)
+train_labels.iloc[-1]=0
+test_labels = test_percent_change.shift(-1)
+test_labels.iloc[-1]=0
+###
+print('Creating Model')
+n_inputs = train_data.shape[1]
+n_outputs = 1
+model = Sequential()
+model.add(Dense(n_inputs*20, input_dim=n_inputs, activation='relu'))
+
+model.add(Dense(n_inputs*10, activation='relu'))
+model.add(Dense(n_inputs*5, activation='relu'))
+model.add(Dense(n_inputs*2, activation='relu'))
+model.add(Dense(n_outputs))
+omt = keras.optimizers.Adam(lr=0.0001)
+loss = 'mse'
+model.compile(loss=loss,
+              optimizer=omt,
+              metrics=['accuracy'])
+
+model.fit(train_data, train_labels,
+          epochs=50,
+          verbose=True,
+          shuffle=False,
+          validation_data=(test_data, test_labels))
+scoresTest = model.evaluate(test_data, test_labels,verbose=0)
+prd = model.predict(test_data)
+print(np.column_stack((prd, test_labels)))
+print(str(model.metrics_names[1])+' %.2f%%' % (scoresTest[1]*100) + ' accuracy on test data')
+
