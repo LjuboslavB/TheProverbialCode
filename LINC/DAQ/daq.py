@@ -8,8 +8,8 @@ k = 0
 c = 0
 started = 0
 page_points = 0
-max_page_points = 10
-samples = 10
+max_page_points = 10000
+samples = 10000
 channels = 6
 data_log=np.zeros((samples, 2 + channels))
 data_file = open('test_logs' + str(int(time.time())) + '.txt', 'a+')
@@ -37,13 +37,16 @@ while k < samples:
                 data_log[old_k:k, :] = np.array([n.split(',')[:] for n in data])
             except Exception:
                 print(data)
-                data_log[old_k:, :] = np.array([n.split(',')[:] for n in data])[0:samples-old_k]
+                try:
+                    data_log[old_k:, :] = np.array([n.split(',')[:] for n in data])[0:samples-old_k]
+                except Exception:
+                    print('start shit')
             if c % 20 == 0:
                 print(str(c) + ' still chugging along')
             if page_points % 100 == 0 or page_points >= max_page_points or k >= samples:
                 _ = data_file.write(str_data)
-                data_file.close()
-                if k < samples:
+                if k < samples and page_points>=max_page_points:
+                    data_file.close()
                     data_file = open('test_logs' + str(int(time.time())) + '.txt', 'a+')
                 page_points = 0
                 str_data = ''
@@ -51,3 +54,4 @@ while k < samples:
         print('no decode')
 
 print(data_log)
+
