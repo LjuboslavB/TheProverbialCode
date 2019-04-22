@@ -42,9 +42,9 @@ def get_page_data(symbol):
     url = "https://finance.yahoo.com/quote/%s/?p=%s" % (symbol, symbol)
     r = requests.get(url)
     cookie = get_cookie_value(r)
-    lines = r.content.decode('unicode-escape').strip(). replace('}', '\n')
+    lines = r.content.decode('latin-1').replace('\\', '')
+    lines = lines.replace('}', '\n')
     return cookie, lines.split('\n')
-
 
 def get_cookie_crumb(symbol):
     cookie, lines = get_page_data(symbol)
@@ -84,6 +84,8 @@ def download_quotes(symbols):
             # print("--------------------------------------------------")
             start_date = 0
             end_date = get_now_epoch()
+            # start_date = end_date-8640000
+            # print('shit start date 94 ish')
             cookie, crumb = get_cookie_crumb(symbol)
             get_data(symbol, start_date, end_date, cookie, crumb)
     else:
@@ -161,7 +163,7 @@ def make_labels_percent_gain(stocks):
     for i in range(len(stocks)):
         if stocks[i].ticker[0][:] != 'No File':
             stocks[i].label_pg = np.zeros((len(stocks[i].data), 1))
-            buy_label_idx = np.nonzero(stocks[i].percent_change >= 2.5)
+            buy_label_idx = np.nonzero(stocks[i].percent_change >=0.5)
             stocks[i].label_pg[buy_label_idx[0][:]-1, :] = 1
     return stocks
 
@@ -175,16 +177,17 @@ def normalize_data(data):
     return data
 
 
-# ticker_list = 'SP500_Labels.txt'
-ticker_list = 'Penny.txt'
+ticker_list = 'SP500_Labels.txt'
+# ticker_list = 'Penny.txt'
 # ticker_list = 'Single.txt'
 tickers = gather_tickers(ticker_list)
 
 # download_quotes(tickers)
+
 stocks = parse_csv(tickers)
 stocks = make_labels_percent_gain(stocks)
 to_show = np.random.random_integers(0, len(tickers)-1, 1)
-
+print(stocks[to_show[0]].ticker[0])
 
 # ANN Code: Binary Buy Signal
 # first testing for just one symbol
@@ -246,20 +249,20 @@ n_inputs = train_data.shape[1]
 n_outputs = 2
 model = Sequential()
 model.add(Dense(n_inputs, input_dim=n_inputs, activation='relu'))
-model.add(Dropout(0.15))
-model.add(Dense(n_inputs, activation='relu'))
-model.add(Dropout(0.15))
+# model.add(Dropout(0.15))
+model.add(Dense(n_inputs*2, activation='relu'))
+# model.add(Dropout(0.15))
 model.add(Dense(n_outputs))
-omt = keras.optimizers.Adam(lr=0.00001)
+omt = keras.optimizers.Adam(lr=0.0005)
 loss = 'binary_crossentropy'
 print('Compiling Model')
 model.compile(loss=loss,
               optimizer=omt,
               metrics=['binary_accuracy'])
 print('Fitting Model')
-model.fit(train_data, train_labels,
-          epochs=200,
-          batch_size=int(np.round((len(test_labels) / 5))),
+history = model.fit(train_data, train_labels,
+          epochs=500,
+          batch_size=int(np.round((len(test_labels) / 10))),
           verbose=True,
           shuffle=False,
           validation_data=(test_data, test_labels))
@@ -278,7 +281,7 @@ sell_day = np.array([])
 i = -1
 f_day = len(stocks[to_show[0]].data_mean) - len(prd)
 ts = stocks[to_show[0]]
-pg = 1
+pg = 2
 while i < len(prd)-2:
     i += 1
     # print(i)
@@ -329,6 +332,12 @@ ax2 = plt.subplot(3, 1, 2, sharex=ax1)
 line2 = plt.plot(np.arange(len(test_labels)), test_labels[:, 1], 'k')
 ax3 = plt.subplot(3, 1, 3, sharex=ax1)
 line3 = plt.plot(np.arange(len(prd)), prd, 'k')
+
+if len(a) != 0:
+    print(5*'\n'+'Win Percent :' + str(np.round(100*len(np.nonzero(a > 0)[0])/len(a), 2)))
+
+print('Average Percent Change :' + str(np.round((100*np.mean(a)), 2)) + 5*'\n')
+
 plt.show()
 
 
